@@ -1,77 +1,20 @@
-import os
-import threading
-from flask import Flask
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
-import yt_dlp
-
-# =====================
-# BOT TOKEN (from Render Environment Variable)
-# =====================
-TOKEN = os.environ.get("TOKEN")
-
-# =====================
-# Web Server (Render needs PORT)
-# =====================
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Bot is running"
-
-def run_web():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-threading.Thread(target=run_web, daemon=True).start()
-
-# =====================
-# Telegram Bot Functions
-# =====================
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🎵 Search your favorite music and enjoy 🎶\n\n"
-        "Just type the song name."
-    )
+import urllib.parse
 
 async def search_music(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.message.text
-    await update.message.reply_text("🔍 Searching...")
+    query = update.message.text.strip()
 
-    ydl_opts = {
-        "quiet": True,
-        "default_search": "ytsearch1",
-        "skip_download": True,
-    }
+    if not query:
+        await update.message.reply_text("❌ Please type a song name.")
+        return
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(query, download=False)
-            video = info["entries"][0]
+    await update.message.reply_text("🔍 Searching on YouTube...")
 
-        title = video.get("title")
-        url = video.get("webpage_url")
+    # YouTube search URL (SAFE, no block)
+    encoded_query = urllib.parse.quote(query)
+    search_url = f"https://www.youtube.com/results?search_query={encoded_query}"
 
-        await update.message.reply_text(
-            f"🎶 {title}\n▶️ Watch / Listen:\n{url}"
-        )
-
-    except Exception:
-        await update.message.reply_text(
-            "❌ Song not found.\nPlease try another song name."
-        )
-
-# =====================
-# Start Bot
-# =====================
-application = ApplicationBuilder().token(TOKEN).build()
-application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, search_music))
-
-application.run_polling()
+    await update.message.reply_text(
+        f"🎵 Search results for:\n<b>{query}</b>\n\n"
+        f"▶️ Open YouTube:\n{search_url}",
+        parse_mode="HTML"
+    )
