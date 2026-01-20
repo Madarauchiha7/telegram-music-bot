@@ -14,7 +14,7 @@ import yt_dlp
 # =====================
 # BOT TOKEN (from Render Environment Variable)
 # =====================
-TOKEN = os.environ.get("8415764096:AAEs8tNIZFqCJyuePfsRIm2067V8xJbDOqc")
+TOKEN = os.environ.get("TOKEN")
 
 # =====================
 # Web Server (Render needs PORT)
